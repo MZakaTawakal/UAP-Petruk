@@ -1,0 +1,185 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <stack>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+//login
+class User {
+public:
+    char username[50];
+    char password[50];
+};
+
+vector<User> users;
+
+bool login(const char* username, const char* password) {
+    for (const auto& user : users) {
+        if (strcmp(user.username, username) == 0 && strcmp(user.password, password) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void registerUser(const char* username, const char* password) {
+    User user;
+    strcpy(user.username, username);
+    strcpy(user.password, password);
+    users.push_back(user);
+}
+
+//jadwal film
+class Film {
+public:
+    char title[100];
+    char schedule[100];
+    vector<vector<bool>> seats;
+
+    Film(const char* t, const char* s) {
+        strcpy(title, t);
+        strcpy(schedule, s);
+        seats = vector<vector<bool>>(5, vector<bool>(5, false)); // 5x5 seat grid
+    }
+};
+
+vector<Film> films;
+
+void addFilm(const char* title, const char* schedule) {
+    films.emplace_back(title, schedule);
+}
+
+//booking
+void chooseSeat(Film& film, int row, int col) {
+    if (row >= 0 && row < film.seats.size() && col >= 0 && col < film.seats[0].size() && !film.seats[row][col]) {
+        film.seats[row][col] = true;
+    } else {
+        cout << "Seat already taken or invalid seat." << endl;
+    }
+}
+
+//notif
+void confirmReservation(const char* username, const char* filmTitle, const char* schedule, int row, int col) {
+    cout << "Reservation confirmed for " << username << "!" << endl;
+    cout << "Film: " << filmTitle << " at " << schedule << endl;
+    cout << "Seat: Row " << row << ", Col " << col << endl;
+}
+
+//materi divide and conquer
+void merge(vector<Film>& films, int l, int m, int r) {
+    int n1 = m - l + 1;
+    int n2 = r - m;
+
+    vector<Film> L(n1);
+    vector<Film> R(n2);
+
+    for (int i = 0; i < n1; i++)
+        L[i] = films[l + i];
+    for (int j = 0; j < n2; j++)
+        R[j] = films[m + 1 + j];
+
+    int i = 0, j = 0, k = l;
+    while (i < n1 && j < n2) {
+        if (strcmp(L[i].schedule, R[j].schedule) <= 0) {
+            films[k] = L[i];
+            i++;
+        } else {
+            films[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        films[k] = L[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        films[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+void mergeSort(vector<Film>& films, int l, int r) {
+    if (l >= r) return;
+    int m = l + (r - l) / 2;
+    mergeSort(films, l, m);
+    mergeSort(films, m + 1, r);
+    merge(films, l, m, r);
+}
+
+//main
+int main() {
+    int choice;
+    char username[50], password[50], filmTitle[100], schedule[100];
+    int row, col;
+
+    // Register some users
+    registerUser("user1", "pass1");
+    registerUser("user2", "pass2");
+
+    // Add some films
+    addFilm("Film A", "2024-06-13 18:00");
+    addFilm("Film B", "2024-06-13 20:00");
+
+    while (true) {
+        cout << "1. Login\n2. Register\n3. Show Films\n4. Choose Seat\n5. Exit\n";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            cout << "Enter username: ";
+            cin >> username;
+            cout << "Enter password: ";
+            cin >> password;
+            if (login(username, password)) {
+                cout << "Login successful!" << endl;
+            } else {
+                cout << "Invalid username or password." << endl;
+            }
+            break;
+        case 2:
+            cout << "Enter new username: ";
+            cin >> username;
+            cout << "Enter new password: ";
+            cin >> password;
+            registerUser(username, password);
+            cout << "Registration successful!" << endl;
+            break;
+        case 3:
+            cout << "Film Schedule:\n";
+            for (const auto& film : films) {
+                cout << "Title: " << film.title << ", Schedule: " << film.schedule << endl;
+            }
+            break;
+        case 4:
+            cout << "Enter film title: ";
+            cin.ignore();
+            cin.getline(filmTitle, 100);
+            cout << "Enter schedule: ";
+            cin.getline(schedule, 100);
+            for (auto& film : films) {
+                if (strcmp(film.title, filmTitle) == 0 && strcmp(film.schedule, schedule) == 0) {
+                    cout << "Enter row (0-4): ";
+                    cin >> row;
+                    cout << "Enter col (0-4): ";
+                    cin >> col;
+                    chooseSeat(film, row, col);
+                    confirmReservation(username, filmTitle, schedule, row, col);
+                    break;
+                }
+            }
+            break;
+        case 5:
+            exit(0);
+        default:
+            cout << "Invalid choice." << endl;
+        }
+    }
+    return 0;
+}
